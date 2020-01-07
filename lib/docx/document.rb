@@ -59,11 +59,11 @@ module Docx
     end
 
     def header_paragraphs
-      @doc.xpath('w:hdr/w:p').map { |p_node| parse_paragraph_from p_node }
+      @header.xpath('w:hdr/w:p').map { |p_node| parse_paragraph_from p_node }
     end
 
     def footer_paragraphs
-      @doc.xpath('w:ftr/w:p').map { |p_node| parse_paragraph_from p_node }
+      @footer.xpath('w:ftr/w:p').map { |p_node| parse_paragraph_from p_node }
     end
 
     def bookmarks
