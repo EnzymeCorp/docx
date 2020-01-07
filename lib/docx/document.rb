@@ -18,7 +18,7 @@ module Docx
   #     puts d.text
   #   end
   class Document
-    attr_reader :xml, :doc, :zip, :styles
+    attr_reader :xml, :doc, :zip, :styles, :header, :footer
 
     def initialize(path, &block)
       @replace = {}
