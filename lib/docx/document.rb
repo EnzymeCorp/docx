@@ -142,6 +142,8 @@ module Docx
     #++
     def update
       replace_entry "word/document.xml", doc.serialize(:save_with => 0)
+      replace_entry "word/header1.xml", header.serialize(:save_with => 0)
+      replace_entry "word/footer1.xml", footer.serialize(:save_with => 0)
     end
 
     # generate Elements::Containers::Paragraph from paragraph XML node
