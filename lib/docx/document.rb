@@ -24,7 +24,11 @@ module Docx
       @replace = {}
       @zip = Zip::File.open(path)
       @document_xml = @zip.read('word/document.xml')
+      @header_xml = @zip.read('word/header1.xml')
+      @footer_xml = @zip.read('word/footer1.xml')
       @doc = Nokogiri::XML(@document_xml)
+      @header = Nokogiri::XML(@header_xml)
+      @footer = Nokogiri::XML(@footer_xml)
       @styles_xml = @zip.read('word/styles.xml')
       @styles = Nokogiri::XML(@styles_xml)
       if block_given?
@@ -52,6 +56,14 @@ module Docx
 
     def paragraphs
       @doc.xpath('//w:document//w:body/w:p').map { |p_node| parse_paragraph_from p_node }
+    end
+
+    def header_paragraphs
+      @doc.xpath('w:hdr/w:p').map { |p_node| parse_paragraph_from p_node }
+    end
+
+    def footer_paragraphs
+      @doc.xpath('w:ftr/w:p').map { |p_node| parse_paragraph_from p_node }
     end
 
     def bookmarks
