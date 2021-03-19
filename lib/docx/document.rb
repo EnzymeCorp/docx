@@ -24,11 +24,11 @@ module Docx
       @replace = {}
       @zip = Zip::File.open(path)
       @document_xml = @zip.read('word/document.xml')
-      @header_xml = @zip.read('word/header1.xml')
-      @footer_xml = @zip.read('word/footer1.xml')
+      @header_xml = @zip.find_entry('word/header1.xml')
+      @footer_xml = @zip.find_entry('word/footer1.xml')
       @doc = Nokogiri::XML(@document_xml)
-      @header = Nokogiri::XML(@header_xml)
-      @footer = Nokogiri::XML(@footer_xml)
+      @header = Nokogiri::XML(@header_xml) if @header_xml
+      @footer = Nokogiri::XML(@footer_xml) if @footer_xml
       @styles_xml = @zip.read('word/styles.xml')
       @styles = Nokogiri::XML(@styles_xml)
       if block_given?
@@ -59,11 +59,11 @@ module Docx
     end
 
     def header_paragraphs
-      @header.xpath('w:hdr/w:p').map { |p_node| parse_paragraph_from p_node }
+      @header.xpath('w:hdr/w:p').map { |p_node| parse_paragraph_from p_node } if @header
     end
 
     def footer_paragraphs
-      @footer.xpath('w:ftr/w:p').map { |p_node| parse_paragraph_from p_node }
+      @footer.xpath('w:ftr/w:p').map { |p_node| parse_paragraph_from p_node } if @footer
     end
 
     def bookmarks
@@ -142,8 +142,8 @@ module Docx
     #++
     def update
       replace_entry "word/document.xml", doc.serialize(:save_with => 0)
-      replace_entry "word/header1.xml", header.serialize(:save_with => 0)
-      replace_entry "word/footer1.xml", footer.serialize(:save_with => 0)
+      replace_entry "word/header1.xml", header.serialize(:save_with => 0) if header
+      replace_entry "word/footer1.xml", footer.serialize(:save_with => 0) if footer
     end
 
     # generate Elements::Containers::Paragraph from paragraph XML node
