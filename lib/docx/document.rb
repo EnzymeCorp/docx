@@ -23,9 +23,9 @@ module Docx
     def initialize(path, &block)
       @replace = {}
       @zip = Zip::File.open(path)
-      @document_xml = @zip.read('word/document.xml')
-      @header_xml = @zip.find_entry('word/header1.xml')
-      @footer_xml = @zip.find_entry('word/footer1.xml')
+      @document_xml = read_zip(@zip, 'word/document.xml')
+      @header_xml = read_zip(@zip, 'word/header1.xml')
+      @footer_xml = read_zip(@zip, 'word/footer1.xml')
       @doc = Nokogiri::XML(@document_xml)
       @header = Nokogiri::XML(@header_xml) if @header_xml
       @footer = Nokogiri::XML(@footer_xml) if @footer_xml
@@ -37,6 +37,10 @@ module Docx
       end
     end
 
+    def read_zip(zip, name)
+      entry = zip.find_entry(name)
+      return entry.get_input_stream(&:read) if entry
+    end
 
     # This stores the current global document properties, for now
     def document_properties
