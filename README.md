@@ -1,14 +1,37 @@
 # docx
 
+[![Gem Version](https://badge.fury.io/rb/docx.svg)](https://badge.fury.io/rb/docx)
+[![Ruby](https://github.com/ruby-docx/docx/workflows/Ruby/badge.svg)](https://github.com/ruby-docx/docx/actions?query=workflow%3ARuby)
+[![Coverage Status](https://coveralls.io/repos/github/ruby-docx/docx/badge.svg?branch=master)](https://coveralls.io/github/ruby-docx/docx?branch=master)
+[![Gitter](https://badges.gitter.im/ruby-docx/community.svg)](https://gitter.im/ruby-docx/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 A ruby library/gem for interacting with `.docx` files. currently capabilities include reading paragraphs/bookmarks, inserting text at bookmarks, reading tables/rows/columns/cells and saving the document.
 
 ## Usage
 
+### Prerequisites
+
+- Ruby 2.5 or later
+
 ### Install
 
-Requires ruby (tested with 2.1.1)
+Add the following line to your application's Gemfile:
 
-    gem 'docx', '~> 0.3.0'
+```ruby
+gem 'docx'
+```
+
+And then execute:
+
+```shell
+bundle install
+```
+
+Or install it yourself as:
+
+```shell
+gem install docx
+```
 
 ### Reading
 
@@ -27,6 +50,17 @@ end
 doc.bookmarks.each_pair do |bookmark_name, bookmark_object|
   puts bookmark_name
 end
+```
+
+Don't have a local file but a buffer? Docx handles those to:
+
+```ruby
+require 'docx'
+
+# Create a Docx::Document object from a remote file
+doc = Docx::Document.open(buffer)
+
+# Everything about reading is the same as shown above
 ```
 
 ### Rendering html
@@ -61,7 +95,7 @@ doc.tables.each do |table|
       puts cell.text
     end
   end
-  
+
   table.columns.each do |column| # Column-based iteration
     column.cells.each do |cell|
       puts cell.text
@@ -98,6 +132,35 @@ end
 
 # Save document to specified path
 doc.save('example-edited.docx')
+```
+
+### Writing to tables
+
+``` ruby
+require 'docx'
+
+# Create a Docx::Document object for our existing docx file
+doc = Docx::Document.open('tables.docx')
+
+# Iterate over each table
+doc.tables.each do |table|
+  last_row = table.rows.last
+  
+  # Copy last row and insert a new one before last row
+  new_row = last_row.copy
+  new_row.insert_before(last_row)
+
+  # Substitute text in each cell of this new row
+  new_row.cells.each do |cell|
+    cell.paragraphs.each do |paragraph|
+      paragraph.each_text_run do |text|
+        text.substitute('_placeholder_', 'replacement value')
+      end
+    end
+  end
+end
+
+doc.save('tables-edited.docx')
 ```
 
 ### Advanced
