@@ -1,43 +1,41 @@
-# coding: utf-8
+# frozen_string_literal: true
+
+require 'spec_helper'
 require 'docx'
 require 'tempfile'
 
 describe Docx::Document do
   before(:all) do
-    @fixtures_path = "spec/fixtures"
-    @formatting_line_count = 12 # number of lines the formatting.docx file has
+    @fixtures_path = 'spec/fixtures'
+    @formatting_line_count = 13 # number of lines the formatting.docx file has
+  end
+
+  describe '#open' do
+    context 'When reading a file made by Office365' do
+      it 'supports it' do
+        expect do
+          Docx::Document.open(@fixtures_path + '/office365.docx')
+        end.to_not raise_error
+      end
+    end
   end
 
   describe 'reading' do
-    before do
-      @doc = Docx::Document.open(@fixtures_path + '/basic.docx')
-    end
-
-    it 'should read the document' do
-      expect(@doc.paragraphs.size).to eq(2)
-      expect(@doc.paragraphs.first.text).to eq('hello')
-      expect(@doc.paragraphs.last.text).to eq('world')
-      expect(@doc.text).to eq("hello\nworld")
-    end
-
-    it 'should read bookmarks' do
-      expect(@doc.bookmarks.size).to eq(1)
-      expect(@doc.bookmarks['test_bookmark']).to_not eq(nil)
-    end
-
-    it 'should have paragraphs' do
-      @doc.each_paragraph do |p|
-        expect(p).to be_an_instance_of(Docx::Elements::Containers::Paragraph)
+    context 'using normal file' do
+      before do
+        @doc = Docx::Document.open(@fixtures_path + '/basic.docx')
       end
+
+      it_behaves_like 'reading'
     end
 
-    it 'should have properly formatted text runs' do
-      @doc.each_paragraph do |p|
-        p.each_text_run do |tr|
-          expect(tr).to be_an_instance_of(Docx::Elements::Containers::TextRun)
-          expect(tr.formatting).to eq(Docx::Elements::Containers::TextRun::DEFAULT_FORMATTING)
-        end
+    context 'using stream' do
+      before do
+        stream = File.binread(@fixtures_path + '/basic.docx')
+        @doc = Docx::Document.open(stream)
       end
+
+      it_behaves_like 'reading'
     end
   end
 
@@ -46,7 +44,7 @@ describe Docx::Document do
       @doc = Docx::Document.open(@fixtures_path + '/tables.docx')
     end
 
-    it "should have tables with rows and cells" do
+    it 'should have tables with rows and cells' do
       expect(@doc.tables.count).to eq 2
       @doc.tables.each do |table|
         expect(table).to be_an_instance_of(Docx::Elements::Containers::Table)
@@ -59,7 +57,7 @@ describe Docx::Document do
       end
     end
 
-    it "should have tables with columns and cells" do
+    it 'should have tables with columns and cells' do
       @doc.tables.each do |table|
         table.columns.each do |column|
           expect(column).to be_an_instance_of(Docx::Elements::Containers::TableColumn)
@@ -70,23 +68,23 @@ describe Docx::Document do
       end
     end
 
-    it "should have proper count" do
+    it 'should have proper count' do
       expect(@doc.tables[0].row_count).to eq 171
       expect(@doc.tables[1].row_count).to eq 2
       expect(@doc.tables[0].column_count).to eq 2
       expect(@doc.tables[1].column_count).to eq 2
     end
 
-    it "should have tables with proper text" do
-      expect(@doc.tables[0].rows[0].cells[0].text).to eq "ENGLISH"
-      expect(@doc.tables[0].rows[0].cells[1].text).to eq "FRANÇAIS"
-      expect(@doc.tables[1].rows[0].cells[0].text).to eq "Second table"
-      expect(@doc.tables[1].rows[0].cells[1].text).to eq "Second tableau"
-      expect(@doc.tables[0].columns[0].cells[5].text).to eq "aphids"
-      expect(@doc.tables[0].columns[1].cells[5].text).to eq "puceron"
+    it 'should have tables with proper text' do
+      expect(@doc.tables[0].rows[0].cells[0].text).to eq 'ENGLISH'
+      expect(@doc.tables[0].rows[0].cells[1].text).to eq 'FRANÇAIS'
+      expect(@doc.tables[1].rows[0].cells[0].text).to eq 'Second table'
+      expect(@doc.tables[1].rows[0].cells[1].text).to eq 'Second tableau'
+      expect(@doc.tables[0].columns[0].cells[5].text).to eq 'aphids'
+      expect(@doc.tables[0].columns[1].cells[5].text).to eq 'puceron'
     end
 
-    it "should read embedded links" do
+    it 'should read embedded links' do
       expect(@doc.tables[0].columns[1].cells[1].text).to match(/^Directive/)
     end
 
@@ -97,7 +95,7 @@ describe Docx::Document do
     end
   end
 
-  describe 'editing'  do
+  describe 'editing' do
     before do
       @doc = Docx::Document.open(@fixtures_path + '/editing.docx')
     end
@@ -161,8 +159,7 @@ describe Docx::Document do
     end
 
     it 'should allow content deletion' do
-      expect{@doc.paragraphs.first.remove!}.to change{@doc.paragraphs.size}.by(-1)
-
+      expect { @doc.paragraphs.first.remove! }.to change { @doc.paragraphs.size }.by(-1)
     end
   end
 
@@ -208,10 +205,11 @@ describe Docx::Document do
       expect(@doc.paragraphs[8].text).to eq('This paragraph is aligned right.')
       expect(@doc.paragraphs[9].text).to eq('This paragraph is 14 points.')
       expect(@doc.paragraphs[10].text).to eq('This paragraph has a word at 16 points.')
+      expect(@doc.paragraphs[11].text).to eq('This sentence has different formatting in different places.')
+      expect(@doc.paragraphs[12].text).to eq('This sentence has a hyperlink.')
     end
 
     it 'should contain a paragraph with multiple text runs' do
-
     end
 
     it 'should detect normal formatting' do
@@ -304,34 +302,21 @@ describe Docx::Document do
   end
 
   describe 'saving' do
-    before do
-      @doc = Docx::Document.open(@fixtures_path + '/saving.docx')
-    end
-
-    it 'should save to a normal file path' do
-      @new_doc_path = @fixtures_path + '/new_save.docx'
-      @doc.save(@new_doc_path)
-      @new_doc = Docx::Document.open(@new_doc_path)
-      expect(@new_doc.paragraphs.size).to eq(@doc.paragraphs.size)
-    end
-
-    it 'should save to a tempfile' do
-      temp_file = Tempfile.new(['docx_gem', '.docx'])
-      @new_doc_path = temp_file.path
-      @doc.save(@new_doc_path)
-      @new_doc = Docx::Document.open(@new_doc_path)
-      expect(@new_doc.paragraphs.size).to eq(@doc.paragraphs.size)
-
-      temp_file.close
-      temp_file.unlink
-      # ensure temp file has been removed
-      expect(File.exists?(@new_doc_path)).to eq(false)
-    end
-
-    after do
-      if File.exists?(@new_doc_path)
-        File.delete(@new_doc_path)
+    context 'from a normal file' do
+      before do
+        @doc = Docx::Document.open(@fixtures_path + '/saving.docx')
       end
+
+      it_behaves_like 'saving to file'
+    end
+
+    context 'from a stream' do
+      before do
+        stream = File.binread(@fixtures_path + '/saving.docx')
+        @doc = Docx::Document.open(stream)
+      end
+
+      it_behaves_like 'saving to file'
     end
 
     context 'wps modified docx file' do
@@ -345,6 +330,24 @@ describe Docx::Document do
     end
   end
 
+  describe 'streaming' do
+    it 'should return a StringIO to send over HTTP' do
+      doc = Docx::Document.open(@fixtures_path + '/basic.docx')
+      expect(doc.stream).to be_a(StringIO)
+    end
+
+    context 'should return a valid docx stream' do
+      before do
+        doc = Docx::Document.open(@fixtures_path + '/basic.docx')
+        result = doc.stream
+
+        @doc = Docx::Document.open(result)
+      end
+
+      it_behaves_like 'reading'
+    end
+  end
+
   describe 'outputting html' do
     before do
       @doc = Docx::Document.open(@fixtures_path + '/formatting.docx')
@@ -353,6 +356,7 @@ describe Docx::Document do
       @span_regex = /(\<span).+((?<=\>)\w+)(<\/span>)/
       @em_regex = /(\<em).+((?<=\>)\w+)(\<\/em\>)/
       @strong_regex = /(\<strong).+((?<=\>)\w+)(\<\/strong\>)/
+      @anchor_tag_regex = /\<a href="(.+)" target="_blank"\>(.+)\<\/a>/
     end
 
     it 'should wrap pragraphs in a p tag' do
@@ -388,7 +392,7 @@ describe Docx::Document do
       expect(@doc.paragraphs[8].to_html.scan(regex).flatten.first.split(';').include?('text-align:right')).to eq(true)
     end
 
-    it "should set font size on styled paragraphs" do
+    it 'should set font size on styled paragraphs' do
       regex = /(\<p{1})[^\>]+style\=\"([^\"]+).+(<\/p>)/
       scan = @doc.paragraphs[9].to_html.scan(regex).flatten
       expect(scan.first).to eq '<p'
@@ -430,31 +434,37 @@ describe Docx::Document do
       expect(@formatted_line.to_html.scan('<span style="text-decoration:underline;"><strong><em>all</em></strong></span>').size).to eq 1
     end
 
+    it 'should join paragraphs with newlines' do
+      expect(@doc.to_html.scan(%(<p style="font-size:11pt;">Normal</p>\n<p style="font-size:11pt;"><em>Italic</em></p>\n<p style="font-size:11pt;"><strong>Bold</strong></p>)).size).to eq 1
+    end
+
+    it 'should convert hyperlinks to anchor tags' do
+      scan = @doc.to_html.scan(@anchor_tag_regex).flatten
+      expect(scan[0]).to eq "http://www.google.com/"
+      expect(scan[1]).to eq "hyperlink"
+    end
   end
 
   describe 'replacing contents' do
     let(:replacement_file_path) { @fixtures_path + '/replacement.png' }
-    let(:temp_file_path){ Tempfile.new(['docx_gem', '.docx']).path }
-    let(:entry_path){ 'word/media/image1.png' }
-    let(:doc){ Docx::Document.open(@fixtures_path + '/replacement.docx') }
+    let(:temp_file_path) { Tempfile.new(['docx_gem', '.docx']).path }
+    let(:entry_path) { 'word/media/image1.png' }
+    let(:doc) { Docx::Document.open(@fixtures_path + '/replacement.docx') }
 
     it 'should replace existing file within the document' do
-      File.open replacement_file_path, "rb" do |io|
+      File.open replacement_file_path, 'rb' do |io|
         doc.replace_entry entry_path, io.read
       end
 
       doc.save(temp_file_path)
 
-      File.open replacement_file_path, "rb" do |io|
-        expect(Zip::File.open(temp_file_path).read entry_path).to eq io.read
+      File.open replacement_file_path, 'rb' do |io|
+        expect(Zip::File.open(temp_file_path).read(entry_path)).to eq io.read
       end
     end
 
     after do
-      if File.exists?(temp_file_path)
-        File.delete(temp_file_path)
-      end
+      File.delete(temp_file_path) if File.exist?(temp_file_path)
     end
   end
 end
-
